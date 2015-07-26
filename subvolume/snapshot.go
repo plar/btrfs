@@ -3,8 +3,8 @@ package subvolume
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/plar/btrfs"
 	"github.com/plar/btrfs/ioctl"
@@ -17,7 +17,6 @@ type cmdSubvolSnapshot struct {
 	readOnly bool
 	src      string
 	dest     string
-	name     string
 
 	executor func(c *cmdSubvolSnapshot) error
 }
@@ -44,11 +43,6 @@ func (c *cmdSubvolSnapshot) Destination(dest string) btrfs.CmdSubvolSnapshot {
 	return c
 }
 
-func (c *cmdSubvolSnapshot) Name(name string) btrfs.CmdSubvolSnapshot {
-	c.name = name
-	return c
-}
-
 func (c *cmdSubvolSnapshot) context() string {
 	return fmt.Sprintf("qgroups=%v, ro='%s', src='%s', dest='%s', name='%s'", c.qgroups, c.readOnly, c.src, c.dest, c.name)
 }
@@ -61,30 +55,22 @@ func (c *cmdSubvolSnapshot) Execute() error {
 	return c.executor(c)
 }
 
-func (c *cmdSubvolSnapshot) validate() error {
-	c.name = strings.TrimSpace(c.name)
-	if !validators.IsSubvolumeName(c.name) {
-		return fmt.Errorf("incorrect subvolume name '%s'", c.name)
-	}
-
-	if len(c.name) > btrfs.BtrfsVolNameMax {
-		return fmt.Errorf("subvolume name too long '%s', max length is %d", c.name, btrfs.BtrfsVolNameMax)
-	}
-
-	// dest := filepath.Join(c.dest, c.name)
-	// fi, err := os.Stat(dest)
-	// if err == nil && fi.IsDir() {
-	// 	return fmt.Errorf("'%s' exists", dest)
-	// }
-
-	return nil
-}
-
 // btrfs ioctl executor
 func ioctlSnapshotExecute(c *cmdSubvolSnapshot) error {
-	err := c.validate()
-	if err != nil {
-		return err
+	dest := filepath.Join(c.dest, c.name)
+	fi, err := os.Stat(dest)
+	if err == nil && !fi.IsDir() {
+		return fmt.Errorf("'%s' exists and it is not a directory", dest)
+	}
+
+	var newname, dst string
+
+	if fi.IsDir() {
+		newname = filepath.Base(c.src)
+		dst = c.dest
+	} else {
+		newname = filepath.Base(c.dest)
+		dst = filepath.Dir(c.dest)
 	}
 
 	dest := filepath.Join(c.dest, c.name)
@@ -94,10 +80,15 @@ func ioctlSnapshotExecute(c *cmdSubvolSnapshot) error {
 		return c.error(fmt.Errorf("'%s' is not a subvolume", dest))
 	}
 
-	// err = ioctl.SubvolSnapshot(c.src, c.dest, c.name)
-	// if err != nil {
-	// 	return err
-	// }
+	err := validators.ValidSubvolumeName(newname)
+	if err != nil {
+		return err
+	}
+
+	err = ioctl.SubvolSnapshot(c.readOnly, c.src, c.dest, newname)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

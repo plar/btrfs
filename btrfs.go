@@ -61,7 +61,6 @@ type CmdSubvolCreate interface {
 
 	QuotaGroups(qgroups ...string) CmdSubvolCreate
 	Destination(dest string) CmdSubvolCreate
-	Name(name string) CmdSubvolCreate
 }
 
 type CmdSubvolSnapshot interface {
@@ -71,7 +70,6 @@ type CmdSubvolSnapshot interface {
 	ReadOnly() CmdSubvolSnapshot
 	Source(src string) CmdSubvolSnapshot
 	Destination(dest string) CmdSubvolSnapshot
-	Name(name string) CmdSubvolSnapshot
 }
 
 type Delete interface {

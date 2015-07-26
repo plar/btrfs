@@ -59,7 +59,7 @@ func SubvolCreate(path, name string) error {
 	return nil
 }
 
-func SubvolSnapshot(src, dest, name string) error {
+func SubvolSnapshot(readonly bool, src, dest, name string) error {
 	srcDir, err := openDir(src)
 	if err != nil {
 		return err
@@ -73,6 +73,10 @@ func SubvolSnapshot(src, dest, name string) error {
 	defer closeDir(destDir)
 
 	var args C.struct_btrfs_ioctl_vol_args_v2
+	if readonly {
+		args.flags |= C.BTRFS_SUBVOL_RDONLY
+	}
+
 	args.fd = C.__s64(getDirFd(srcDir))
 	for i, c := range []byte(name) {
 		args.name[i] = C.char(c)
@@ -107,7 +111,6 @@ func SubvolDelete(path, name string) error {
 }
 
 func TestIsSubvolume(name string) (bool, error) {
-
 	fi, err := os.Stat(name)
 	if err != nil {
 		return false, err

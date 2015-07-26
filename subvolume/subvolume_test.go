@@ -18,7 +18,6 @@ import (
 var rootDir, mount string
 
 func TestSubVolumeCreateValidation(t *testing.T) {
-	//cmd := IoctlNewCreate()
 	subvol := btrfs.NewIoctl().Subvolume()
 	cmd := subvol.Create()
 	err := cmd.Execute()
