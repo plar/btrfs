@@ -44,7 +44,7 @@ func (c *cmdSubvolSnapshot) Destination(dest string) btrfs.CmdSubvolSnapshot {
 }
 
 func (c *cmdSubvolSnapshot) context() string {
-	return fmt.Sprintf("qgroups=%v, ro='%s', src='%s', dest='%s', name='%s'", c.qgroups, c.readOnly, c.src, c.dest, c.name)
+	return fmt.Sprintf("qgroups=%v, ro='%s', src='%s', dest='%s'", c.qgroups, c.readOnly, c.src, c.dest)
 }
 
 func (c *cmdSubvolSnapshot) error(err error) *btrfs.BtrfsError {
@@ -57,35 +57,32 @@ func (c *cmdSubvolSnapshot) Execute() error {
 
 // btrfs ioctl executor
 func ioctlSnapshotExecute(c *cmdSubvolSnapshot) error {
-	dest := filepath.Join(c.dest, c.name)
-	fi, err := os.Stat(dest)
+	fi, err := os.Stat(c.dest)
 	if err == nil && !fi.IsDir() {
-		return fmt.Errorf("'%s' exists and it is not a directory", dest)
+		return fmt.Errorf("'%s' exists and it is not a directory", c.dest)
 	}
 
-	var newname, dst string
-
-	if fi.IsDir() {
+	var newname, dest string
+	if err == nil && fi.IsDir() {
+		dest = c.dest
 		newname = filepath.Base(c.src)
-		dst = c.dest
 	} else {
+		dest = filepath.Dir(c.dest)
 		newname = filepath.Base(c.dest)
-		dst = filepath.Dir(c.dest)
 	}
 
-	dest := filepath.Join(c.dest, c.name)
-	if subvol, err := ioctl.TestIsSubvolume(dest); err != nil {
+	if subvol, err := ioctl.TestIsSubvolume(c.src); err != nil {
 		return err
 	} else if !subvol {
-		return c.error(fmt.Errorf("'%s' is not a subvolume", dest))
+		return c.error(fmt.Errorf("'%s' is not a subvolume", newname))
 	}
 
-	err := validators.ValidSubvolumeName(newname)
+	err = validators.ValidSubvolumeName(newname)
 	if err != nil {
 		return err
 	}
 
-	err = ioctl.SubvolSnapshot(c.readOnly, c.src, c.dest, newname)
+	err = ioctl.SubvolSnapshot(c.readOnly, c.src, dest, newname)
 	if err != nil {
 		return err
 	}
@@ -95,11 +92,6 @@ func ioctlSnapshotExecute(c *cmdSubvolSnapshot) error {
 
 // btrfs cli executor
 func cliSnapshotExecute(c *cmdSubvolSnapshot) error {
-	err := c.validate()
-	if err != nil {
-		return err
-	}
-
 	return c.error(errors.New("Unimplemented"))
 }
 

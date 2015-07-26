@@ -22,25 +22,25 @@ func TestSubVolumeCreateValidation(t *testing.T) {
 	cmd := subvol.Create()
 	err := cmd.Execute()
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "incorrect subvolume name ''")
+	assert.Contains(t, err.Error(), "destination is empty")
 
 	cmd = subvol.Create()
-	err = cmd.Name(strings.Repeat("s", 512)).Execute()
+	err = cmd.Destination(strings.Repeat("s", 512)).Execute()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "subvolume name too long")
 	assert.Contains(t, err.Error(), "max length is 255")
 
-	cmd = subvol.Create()
-	err = cmd.Name("/name").Execute()
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "incorrect subvolume name '/name'")
+	// cmd = subvol.Create()
+	// err = cmd.Name("/name").Execute()
+	// assert.Error(t, err)
+	// assert.Contains(t, err.Error(), "incorrect subvolume name '/name'")
 
 	cmd = subvol.Create()
-	err = cmd.Name(".").Execute()
+	err = cmd.Destination(".").Execute()
 	assert.Contains(t, err.Error(), "incorrect subvolume name '.'")
 
 	cmd = subvol.Create()
-	err = cmd.Name("..").Execute()
+	err = cmd.Destination("..").Execute()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "incorrect subvolume name '..'")
 }
@@ -50,28 +50,27 @@ func TestSubVolumeCreate(t *testing.T) {
 	cmd := subvol.Create()
 	assert.NotNil(t, cmd)
 
-	err := cmd.QuotaGroups("1", "2", "3").Destination(mount).Name("volume1").Execute()
+	err := cmd.QuotaGroups("1", "2", "3").Destination(filepath.Join(mount, "volume2")).Execute()
 	assert.NoError(t, err)
 
 	ctx := cmd.(*cmdSubvolCreate)
 	assert.Equal(t, ctx.qgroups, []string{"1", "2", "3"})
-	assert.Equal(t, ctx.dest, mount)
-	assert.Equal(t, ctx.name, "volume1")
+	assert.Equal(t, ctx.dest, filepath.Join(mount, "volume2"))
 }
 
 func TestSubVolumeSnapshot(t *testing.T) {
 	subvol := btrfs.NewIoctl().Subvolume()
-	cmd := subvol.Snapshot()
-	assert.NotNil(t, cmd)
-
-	err := cmd.ReadOnly().Source("source").Destination(mount).Name("volume1").Execute()
+	err := subvol.Create().Destination(filepath.Join(mount, "volume1")).Execute()
 	assert.NoError(t, err)
 
-	ctx := cmd.(*cmdSubvolSnapshot)
-	assert.Equal(t, ctx.readOnly, true)
-	assert.Equal(t, ctx.src, "source")
-	assert.Equal(t, ctx.dest, mount)
-	assert.Equal(t, ctx.name, "volume1")
+	cmdSnapshot := subvol.Snapshot().Source(filepath.Join(mount, "volume1")).Destination(filepath.Join(mount, "snapshot"))
+	err = cmdSnapshot.Execute()
+	assert.NoError(t, err)
+
+	//ctx := cmd.(*cmdSubvolSnapshot)
+	// assert.Equal(t, ctx.readOnly, true)
+	// assert.Equal(t, ctx.src, "source")
+	// assert.Equal(t, ctx.dest, filepath.Join(mount, "volume1"))
 }
 
 func run(cmd string, args ...string) error {

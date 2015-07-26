@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
-	"strings"
 
 	"os"
 
@@ -16,7 +15,6 @@ import (
 type cmdSubvolCreate struct {
 	qgroups []string
 	dest    string
-	name    string
 
 	executor func(c *cmdSubvolCreate) error
 }
@@ -33,13 +31,8 @@ func (c *cmdSubvolCreate) Destination(dest string) btrfs.CmdSubvolCreate {
 	return c
 }
 
-func (c *cmdSubvolCreate) Name(name string) btrfs.CmdSubvolCreate {
-	c.name = name
-	return c
-}
-
 func (c *cmdSubvolCreate) context() string {
-	return fmt.Sprintf("qgroups=%v, dest='%s', name='%s'", c.qgroups, c.dest, c.name)
+	return fmt.Sprintf("qgroups=%v, dest='%s'", c.qgroups, c.dest)
 }
 
 func (c *cmdSubvolCreate) error(err error) *btrfs.BtrfsError {
@@ -47,19 +40,19 @@ func (c *cmdSubvolCreate) error(err error) *btrfs.BtrfsError {
 }
 
 func (c *cmdSubvolCreate) validate() error {
-	c.name = strings.TrimSpace(c.name)
-	if !validators.IsSubvolumeName(c.name) {
-		return fmt.Errorf("incorrect subvolume name '%s'", c.name)
+	if len(c.dest) == 0 {
+		return errors.New("destination is empty")
 	}
 
-	if len(c.name) > btrfs.BtrfsVolNameMax {
-		return fmt.Errorf("subvolume name too long '%s', max length is %d", c.name, btrfs.BtrfsVolNameMax)
+	name := filepath.Base(c.dest)
+	err := validators.ValidSubvolumeName(name)
+	if err != nil {
+		return err
 	}
 
-	dest := filepath.Join(c.dest, c.name)
-	fi, err := os.Stat(dest)
+	fi, err := os.Stat(c.dest)
 	if err == nil && fi.IsDir() {
-		return fmt.Errorf("'%s' exists", dest)
+		return fmt.Errorf("'%s' exists", c.dest)
 	}
 
 	return nil
@@ -80,7 +73,11 @@ func ioctlCreateExecute(c *cmdSubvolCreate) error {
 		return err
 	}
 
-	err = ioctl.SubvolCreate(c.dest, c.name)
+	var dest, name string
+	dest = filepath.Dir(c.dest)
+	name = filepath.Base(c.dest)
+
+	err = ioctl.SubvolCreate(dest, name)
 	if err != nil {
 		return err
 	}

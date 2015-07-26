@@ -8,8 +8,7 @@ import (
 )
 
 func ValidSubvolumeName(name string) error {
-
-	if len(name) > 0 && strings.Index(name, "/") == -1 && name != "." && name != ".." {
+	if len(name) == 0 || strings.Index(name, "/") != -1 || name == "." || name == ".." {
 		return fmt.Errorf("incorrect subvolume name '%s'", name)
 	}
 
