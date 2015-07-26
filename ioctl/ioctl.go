@@ -9,6 +9,7 @@ import "C"
 
 import (
 	"fmt"
+	"os"
 	"syscall"
 	"unsafe"
 )
@@ -103,4 +104,17 @@ func SubvolDelete(path, name string) error {
 		return fmt.Errorf("Failed to destroy btrfs snapshot: %v", errno.Error())
 	}
 	return nil
+}
+
+func TestIsSubvolume(name string) (bool, error) {
+
+	fi, err := os.Stat(name)
+	if err != nil {
+		return false, err
+	}
+
+	stat := fi.Sys().(*syscall.Stat_t)
+
+	// On btrfs subvolumes always have the inode 256
+	return stat != nil && stat.Ino == 256 && fi.IsDir(), nil
 }

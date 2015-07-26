@@ -10,74 +10,71 @@ import (
 
 	"github.com/plar/btrfs"
 	"github.com/plar/btrfs/ioctl"
+	"github.com/plar/btrfs/validators"
 )
 
-// create command
-type Create interface {
-	btrfs.Executor
-
-	QuotaGroups(qgroups ...string) Create
-	Destination(dest string) Create
-	Name(name string) Create
-}
-
-type createContext struct {
+type cmdSubvolCreate struct {
 	qgroups []string
 	dest    string
 	name    string
 
-	executor func(c *createContext) error
+	executor func(c *cmdSubvolCreate) error
 }
 
-func (c *createContext) QuotaGroups(qgroups ...string) Create {
+func (c *cmdSubvolCreate) QuotaGroups(qgroups ...string) btrfs.CmdSubvolCreate {
 	for _, qgroup := range qgroups {
 		c.qgroups = append(c.qgroups, qgroup)
 	}
 	return c
 }
 
-func (c *createContext) Destination(dest string) Create {
+func (c *cmdSubvolCreate) Destination(dest string) btrfs.CmdSubvolCreate {
 	c.dest = dest
 	return c
 }
 
-func (c *createContext) Name(name string) Create {
+func (c *cmdSubvolCreate) Name(name string) btrfs.CmdSubvolCreate {
 	c.name = name
 	return c
 }
 
-func (c *createContext) context() string {
+func (c *cmdSubvolCreate) context() string {
 	return fmt.Sprintf("qgroups=%v, dest='%s', name='%s'", c.qgroups, c.dest, c.name)
 }
 
-func (c *createContext) error(err error) *btrfs.BtrfsError {
-	return &btrfs.BtrfsError{Func: "Subvolume Create", Context: c.context(), Err: err}
+func (c *cmdSubvolCreate) error(err error) *btrfs.BtrfsError {
+	return &btrfs.BtrfsError{Func: string(btrfs.CmdSubvolumeCreate), Context: c.context(), Err: err}
 }
 
-func (c *createContext) validate() error {
+func (c *cmdSubvolCreate) validate() error {
 	c.name = strings.TrimSpace(c.name)
-	if !btrfs.TestSubvolumeName(c.name) {
-		return c.error(fmt.Errorf("incorrect subvolume name '%s'", c.name))
+	if !validators.IsSubvolumeName(c.name) {
+		return fmt.Errorf("incorrect subvolume name '%s'", c.name)
 	}
 
 	if len(c.name) > btrfs.BtrfsVolNameMax {
-		return c.error(fmt.Errorf("subvolume name too long '%s', max length is %d", c.name, btrfs.BtrfsVolNameMax))
+		return fmt.Errorf("subvolume name too long '%s', max length is %d", c.name, btrfs.BtrfsVolNameMax)
 	}
 
-	fi, err := os.Stat(filepath.Join(c.dest, c.name))
+	dest := filepath.Join(c.dest, c.name)
+	fi, err := os.Stat(dest)
 	if err == nil && fi.IsDir() {
-		return c.error(fmt.Errorf("'%s' exists", c.dest))
+		return fmt.Errorf("'%s' exists", dest)
 	}
 
 	return nil
 }
 
-func (c *createContext) Execute() error {
-	return c.executor(c)
+func (c *cmdSubvolCreate) Execute() error {
+	err := c.executor(c)
+	if err != nil {
+		return c.error(err)
+	}
+	return nil
 }
 
 // btrfs ioctl executor
-func ioctlExecute(c *createContext) error {
+func ioctlCreateExecute(c *cmdSubvolCreate) error {
 	err := c.validate()
 	if err != nil {
 		return err
@@ -91,19 +88,21 @@ func ioctlExecute(c *createContext) error {
 	return nil
 }
 
-func IoctlNewCreate() Create {
-	return &createContext{executor: ioctlExecute}
-}
-
-func cliExecute(c *createContext) error {
+// btrfs cli executor
+func cliCreateExecute(c *cmdSubvolCreate) error {
 	err := c.validate()
 	if err != nil {
 		return err
 	}
 
-	return c.error(errors.New("Unimplemented"))
+	return errors.New("Unimplemented")
 }
 
-func CliNewCreate() Create {
-	return &createContext{executor: cliExecute}
+// commands
+func ioctlCreate() interface{} {
+	return &cmdSubvolCreate{executor: ioctlCreateExecute}
+}
+
+func cliCreate() interface{} {
+	return &cmdSubvolCreate{executor: cliCreateExecute}
 }
