@@ -63,14 +63,24 @@ func TestSubVolumeSnapshot(t *testing.T) {
 	err := subvol.Create().Destination(filepath.Join(mount, "volume1")).Execute()
 	assert.NoError(t, err)
 
+	// pass dest/name
 	cmdSnapshot := subvol.Snapshot().Source(filepath.Join(mount, "volume1")).Destination(filepath.Join(mount, "snapshot"))
 	err = cmdSnapshot.Execute()
 	assert.NoError(t, err)
 
-	//ctx := cmd.(*cmdSubvolSnapshot)
-	// assert.Equal(t, ctx.readOnly, true)
-	// assert.Equal(t, ctx.src, "source")
-	// assert.Equal(t, ctx.dest, filepath.Join(mount, "volume1"))
+	fi, err := os.Stat(filepath.Join(mount, "snapshot"))
+	assert.NoError(t, err)
+	assert.True(t, fi.IsDir())
+
+	// pass only dest directory
+	os.MkdirAll(filepath.Join(mount, "newsnapsdir"), 0700)
+	cmdSnapshot = subvol.Snapshot().Source(filepath.Join(mount, "volume1")).Destination(filepath.Join(mount, "newsnapsdir/"))
+	err = cmdSnapshot.Execute()
+	assert.NoError(t, err)
+
+	fi, err = os.Stat(filepath.Join(mount, "newsnapsdir/volume1"))
+	assert.NoError(t, err)
+	assert.True(t, fi.IsDir())
 }
 
 func run(cmd string, args ...string) error {
