@@ -83,6 +83,22 @@ func TestSubVolumeSnapshot(t *testing.T) {
 	assert.True(t, fi.IsDir())
 }
 
+func TestSubVolumeFindNew(t *testing.T) {
+	repo := filepath.Join(mount, "repo_TestSubVolumeFindNew")
+
+	subvol := btrfs.NewIoctl().Subvolume()
+	err := subvol.Create().Destination(repo).Execute()
+	assert.NoError(t, err)
+
+	master := filepath.Join(repo, "master")
+	err = subvol.Create().Destination(master).Execute()
+	assert.NoError(t, err)
+
+	commit0 := filepath.Join(repo, "commit0")
+	err = subvol.Snapshot().Source(master).Destination(commit0).Execute()
+	assert.NoError(t, err)
+}
+
 func run(cmd string, args ...string) error {
 	log.Printf("Run %s %s", cmd, args)
 	_, err := exec.Command(cmd, args...).CombinedOutput()

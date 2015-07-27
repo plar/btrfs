@@ -14,6 +14,7 @@ const (
 const (
 	CmdSubvolumeCreate   Command = "subvolume create"
 	CmdSubvolumeSnapshot Command = "subvolume snapshot"
+	CmdSubvolumeFindNew  Command = "subvolume find-new"
 )
 
 const (
@@ -72,8 +73,11 @@ type CmdSubvolSnapshot interface {
 	Destination(dest string) CmdSubvolSnapshot
 }
 
-type Delete interface {
+type CmdSubvolFindNew interface {
 	Executor
+
+	Destination(dest string) CmdSubvolFindNew
+	LastGen(uint64) CmdSubvolFindNew
 }
 
 type api struct {
