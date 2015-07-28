@@ -53,7 +53,7 @@ func TestSubVolumeCreate(t *testing.T) {
 	err := cmd.QuotaGroups("1", "2", "3").Destination(filepath.Join(mount, "volume2")).Execute()
 	assert.NoError(t, err)
 
-	ctx := cmd.(*cmdSubvolCreate)
+	ctx := cmd.(*subvolCreate)
 	assert.Equal(t, ctx.qgroups, []string{"1", "2", "3"})
 	assert.Equal(t, ctx.dest, filepath.Join(mount, "volume2"))
 }

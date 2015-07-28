@@ -9,31 +9,31 @@ import (
 	"github.com/plar/btrfs/ioctl"
 )
 
-type cmdSubvolDelete struct {
+type subvolDelete struct {
 	dest string
 
-	executor func(c *cmdSubvolDelete) error
+	executor func(c *subvolDelete) error
 }
 
-func (c *cmdSubvolDelete) Destination(dest string) btrfs.CmdSubvolDelete {
+func (c *subvolDelete) Destination(dest string) btrfs.SubvolDelete {
 	c.dest = dest
 	return c
 }
 
-func (c *cmdSubvolDelete) context() string {
+func (c *subvolDelete) context() string {
 	return fmt.Sprintf("dest='%s'", c.dest)
 }
 
-func (c *cmdSubvolDelete) error(err error) *btrfs.BtrfsError {
-	return &btrfs.BtrfsError{Func: string(btrfs.CmdSubvolumeDelete), Context: c.context(), Err: err}
+func (c *subvolDelete) error(err error) *btrfs.BtrfsError {
+	return &btrfs.BtrfsError{Func: string(btrfs.CmdSubvolDelete), Context: c.context(), Err: err}
 }
 
-func (c *cmdSubvolDelete) Execute() error {
+func (c *subvolDelete) Execute() error {
 	return c.executor(c)
 }
 
 // btrfs ioctl executor
-func ioctlDeleteExecute(c *cmdSubvolDelete) error {
+func ioctlDeleteExecute(c *subvolDelete) error {
 	if len(c.dest) == 0 {
 		return fmt.Errorf("Subvolume is required")
 	}
@@ -50,15 +50,15 @@ func ioctlDeleteExecute(c *cmdSubvolDelete) error {
 }
 
 // btrfs cli executor
-func cliDeleteExecute(c *cmdSubvolDelete) error {
+func cliDeleteExecute(c *subvolDelete) error {
 	return c.error(errors.New("Unimplemented"))
 }
 
 // commands
 func ioctlDelete() interface{} {
-	return &cmdSubvolDelete{executor: ioctlDeleteExecute}
+	return &subvolDelete{executor: ioctlDeleteExecute}
 }
 
 func cliDelete() interface{} {
-	return &cmdSubvolDelete{executor: cliDeleteExecute}
+	return &subvolDelete{executor: cliDeleteExecute}
 }

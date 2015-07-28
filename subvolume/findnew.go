@@ -8,37 +8,37 @@ import (
 	"github.com/plar/btrfs/ioctl"
 )
 
-type cmdSubvolFindNew struct {
+type subvolFindNew struct {
 	lastGen uint64
 	dest    string
 
-	executor func(c *cmdSubvolFindNew) error
+	executor func(c *subvolFindNew) error
 }
 
-func (c *cmdSubvolFindNew) Destination(dest string) btrfs.CmdSubvolFindNew {
+func (c *subvolFindNew) Destination(dest string) btrfs.SubvolFindNew {
 	c.dest = dest
 	return c
 }
 
-func (c *cmdSubvolFindNew) LastGen(lastGen uint64) btrfs.CmdSubvolFindNew {
+func (c *subvolFindNew) LastGen(lastGen uint64) btrfs.SubvolFindNew {
 	c.lastGen = lastGen
 	return c
 }
 
-func (c *cmdSubvolFindNew) context() string {
+func (c *subvolFindNew) context() string {
 	return fmt.Sprintf("dest='%s', lastGen=%d", c.dest, c.lastGen)
 }
 
-func (c *cmdSubvolFindNew) error(err error) *btrfs.BtrfsError {
-	return &btrfs.BtrfsError{Func: string(btrfs.CmdSubvolumeFindNew), Context: c.context(), Err: err}
+func (c *subvolFindNew) error(err error) *btrfs.BtrfsError {
+	return &btrfs.BtrfsError{Func: string(btrfs.CmdSubvolFindNew), Context: c.context(), Err: err}
 }
 
-func (c *cmdSubvolFindNew) Execute() error {
+func (c *subvolFindNew) Execute() error {
 	return c.executor(c)
 }
 
 // btrfs ioctl executor
-func ioctlFindNewExecute(c *cmdSubvolFindNew) error {
+func ioctlFindNewExecute(c *subvolFindNew) error {
 	if len(c.dest) == 0 {
 		return fmt.Errorf("Subvolume is required")
 	}
@@ -52,15 +52,15 @@ func ioctlFindNewExecute(c *cmdSubvolFindNew) error {
 }
 
 // btrfs cli executor
-func cliFindNewExecute(c *cmdSubvolFindNew) error {
+func cliFindNewExecute(c *subvolFindNew) error {
 	return c.error(errors.New("Unimplemented"))
 }
 
 // commands
 func ioctlFindNew() interface{} {
-	return &cmdSubvolFindNew{executor: ioctlFindNewExecute}
+	return &subvolFindNew{executor: ioctlFindNewExecute}
 }
 
 func cliFindNew() interface{} {
-	return &cmdSubvolFindNew{executor: cliFindNewExecute}
+	return &subvolFindNew{executor: cliFindNewExecute}
 }

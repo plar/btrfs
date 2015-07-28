@@ -12,34 +12,34 @@ import (
 	"github.com/plar/btrfs/validators"
 )
 
-type cmdSubvolCreate struct {
+type subvolCreate struct {
 	qgroups []string
 	dest    string
 
-	executor func(c *cmdSubvolCreate) error
+	executor func(c *subvolCreate) error
 }
 
-func (c *cmdSubvolCreate) QuotaGroups(qgroups ...string) btrfs.CmdSubvolCreate {
+func (c *subvolCreate) QuotaGroups(qgroups ...string) btrfs.SubvolCreate {
 	for _, qgroup := range qgroups {
 		c.qgroups = append(c.qgroups, qgroup)
 	}
 	return c
 }
 
-func (c *cmdSubvolCreate) Destination(dest string) btrfs.CmdSubvolCreate {
+func (c *subvolCreate) Destination(dest string) btrfs.SubvolCreate {
 	c.dest = dest
 	return c
 }
 
-func (c *cmdSubvolCreate) context() string {
+func (c *subvolCreate) context() string {
 	return fmt.Sprintf("qgroups=%v, dest='%s'", c.qgroups, c.dest)
 }
 
-func (c *cmdSubvolCreate) error(err error) *btrfs.BtrfsError {
-	return &btrfs.BtrfsError{Func: string(btrfs.CmdSubvolumeCreate), Context: c.context(), Err: err}
+func (c *subvolCreate) error(err error) *btrfs.BtrfsError {
+	return &btrfs.BtrfsError{Func: string(btrfs.CmdSubvolCreate), Context: c.context(), Err: err}
 }
 
-func (c *cmdSubvolCreate) validate() error {
+func (c *subvolCreate) validate() error {
 	if len(c.dest) == 0 {
 		return errors.New("destination is empty")
 	}
@@ -58,7 +58,7 @@ func (c *cmdSubvolCreate) validate() error {
 	return nil
 }
 
-func (c *cmdSubvolCreate) Execute() error {
+func (c *subvolCreate) Execute() error {
 	err := c.executor(c)
 	if err != nil {
 		return c.error(err)
@@ -67,7 +67,7 @@ func (c *cmdSubvolCreate) Execute() error {
 }
 
 // btrfs ioctl executor
-func ioctlCreateExecute(c *cmdSubvolCreate) error {
+func ioctlCreateExecute(c *subvolCreate) error {
 	err := c.validate()
 	if err != nil {
 		return err
@@ -86,7 +86,7 @@ func ioctlCreateExecute(c *cmdSubvolCreate) error {
 }
 
 // btrfs cli executor
-func cliCreateExecute(c *cmdSubvolCreate) error {
+func cliCreateExecute(c *subvolCreate) error {
 	err := c.validate()
 	if err != nil {
 		return err
@@ -97,9 +97,9 @@ func cliCreateExecute(c *cmdSubvolCreate) error {
 
 // commands
 func ioctlCreate() interface{} {
-	return &cmdSubvolCreate{executor: ioctlCreateExecute}
+	return &subvolCreate{executor: ioctlCreateExecute}
 }
 
 func cliCreate() interface{} {
-	return &cmdSubvolCreate{executor: cliCreateExecute}
+	return &subvolCreate{executor: cliCreateExecute}
 }

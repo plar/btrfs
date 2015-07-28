@@ -12,10 +12,11 @@ const (
 )
 
 const (
-	CmdSubvolumeCreate   Command = "subvolume create"
-	CmdSubvolumeSnapshot Command = "subvolume snapshot"
-	CmdSubvolumeFindNew  Command = "subvolume find-new"
-	CmdSubvolumeDelete   Command = "subvolume delete"
+	CmdSubvolCreate   Command = "subvolume create"
+	CmdSubvolSnapshot Command = "subvolume snapshot"
+	CmdSubvolFindNew  Command = "subvolume find-new"
+	CmdSubvolDelete   Command = "subvolume delete"
+	CmdSubvolList     Command = "subvolume list"
 )
 
 const (
@@ -54,38 +55,45 @@ type API interface {
 }
 
 type Subvolume interface {
-	Create() CmdSubvolCreate
-	Snapshot() CmdSubvolSnapshot
-	Delete() CmdSubvolDelete
+	Create() SubvolCreate
+	Snapshot() SubvolSnapshot
+	Delete() SubvolDelete
+	List() SubvolList
 }
 
-type CmdSubvolCreate interface {
+type SubvolCreate interface {
 	Executor
 
-	QuotaGroups(qgroups ...string) CmdSubvolCreate
-	Destination(dest string) CmdSubvolCreate
+	QuotaGroups(qgroups ...string) SubvolCreate
+	Destination(dest string) SubvolCreate
 }
 
-type CmdSubvolSnapshot interface {
+type SubvolSnapshot interface {
 	Executor
 
-	QuotaGroups(qgroups ...string) CmdSubvolSnapshot
-	ReadOnly() CmdSubvolSnapshot
-	Source(src string) CmdSubvolSnapshot
-	Destination(dest string) CmdSubvolSnapshot
+	QuotaGroups(qgroups ...string) SubvolSnapshot
+	ReadOnly() SubvolSnapshot
+	Source(src string) SubvolSnapshot
+	Destination(dest string) SubvolSnapshot
 }
 
-type CmdSubvolFindNew interface {
+type SubvolFindNew interface {
 	Executor
 
-	Destination(dest string) CmdSubvolFindNew
-	LastGen(uint64) CmdSubvolFindNew
+	Destination(dest string) SubvolFindNew
+	LastGen(uint64) SubvolFindNew
 }
 
-type CmdSubvolDelete interface {
+type SubvolDelete interface {
 	Executor
 
-	Destination(dest string) CmdSubvolDelete
+	Destination(dest string) SubvolDelete
+}
+
+type SubvolList interface {
+	Executor
+
+	Destination(dest string) SubvolList
 }
 
 type api struct {
@@ -100,26 +108,34 @@ type subvolume struct {
 	apiType ApiType
 }
 
-func (s *subvolume) Create() CmdSubvolCreate {
-	cmd, ok := factory(s.apiType, CmdSubvolumeCreate).(CmdSubvolCreate)
+func (s *subvolume) Create() SubvolCreate {
+	cmd, ok := factory(s.apiType, CmdSubvolCreate).(SubvolCreate)
 	if !ok {
-		panic("Expected btrfs.CmdSubvolCreate interface")
+		panic("Expected btrfs.SubvolCreate interface")
 	}
 	return cmd
 }
 
-func (s *subvolume) Snapshot() CmdSubvolSnapshot {
-	cmd, ok := factory(s.apiType, CmdSubvolumeSnapshot).(CmdSubvolSnapshot)
+func (s *subvolume) Snapshot() SubvolSnapshot {
+	cmd, ok := factory(s.apiType, CmdSubvolSnapshot).(SubvolSnapshot)
 	if !ok {
-		panic("Expected btrfs.CmdSubvolSnapshot interface")
+		panic("Expected btrfs.SubvolSnapshot interface")
 	}
 	return cmd
 }
 
-func (s *subvolume) Delete() CmdSubvolDelete {
-	cmd, ok := factory(s.apiType, CmdSubvolumeDelete).(CmdSubvolDelete)
+func (s *subvolume) Delete() SubvolDelete {
+	cmd, ok := factory(s.apiType, CmdSubvolDelete).(SubvolDelete)
 	if !ok {
-		panic("Expected btrfs.CmdSubvolDelete interface")
+		panic("Expected btrfs.SubvolDelete interface")
+	}
+	return cmd
+}
+
+func (s *subvolume) List() SubvolList {
+	cmd, ok := factory(s.apiType, CmdSubvolList).(SubvolList)
+	if !ok {
+		panic("Expected btrfs.SubvolList interface")
 	}
 	return cmd
 }

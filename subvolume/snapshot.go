@@ -12,51 +12,51 @@ import (
 )
 
 // snapshot command
-type cmdSubvolSnapshot struct {
+type subvolSnapshot struct {
 	qgroups  []string
 	readOnly bool
 	src      string
 	dest     string
 
-	executor func(c *cmdSubvolSnapshot) error
+	executor func(c *subvolSnapshot) error
 }
 
-func (c *cmdSubvolSnapshot) QuotaGroups(qgroups ...string) btrfs.CmdSubvolSnapshot {
+func (c *subvolSnapshot) QuotaGroups(qgroups ...string) btrfs.SubvolSnapshot {
 	for _, qgroup := range qgroups {
 		c.qgroups = append(c.qgroups, qgroup)
 	}
 	return c
 }
 
-func (c *cmdSubvolSnapshot) ReadOnly() btrfs.CmdSubvolSnapshot {
+func (c *subvolSnapshot) ReadOnly() btrfs.SubvolSnapshot {
 	c.readOnly = true
 	return c
 }
 
-func (c *cmdSubvolSnapshot) Source(src string) btrfs.CmdSubvolSnapshot {
+func (c *subvolSnapshot) Source(src string) btrfs.SubvolSnapshot {
 	c.src = src
 	return c
 }
 
-func (c *cmdSubvolSnapshot) Destination(dest string) btrfs.CmdSubvolSnapshot {
+func (c *subvolSnapshot) Destination(dest string) btrfs.SubvolSnapshot {
 	c.dest = dest
 	return c
 }
 
-func (c *cmdSubvolSnapshot) context() string {
+func (c *subvolSnapshot) context() string {
 	return fmt.Sprintf("qgroups=%v, ro='%s', src='%s', dest='%s'", c.qgroups, c.readOnly, c.src, c.dest)
 }
 
-func (c *cmdSubvolSnapshot) error(err error) *btrfs.BtrfsError {
-	return &btrfs.BtrfsError{Func: string(btrfs.CmdSubvolumeSnapshot), Context: c.context(), Err: err}
+func (c *subvolSnapshot) error(err error) *btrfs.BtrfsError {
+	return &btrfs.BtrfsError{Func: string(btrfs.CmdSubvolSnapshot), Context: c.context(), Err: err}
 }
 
-func (c *cmdSubvolSnapshot) Execute() error {
+func (c *subvolSnapshot) Execute() error {
 	return c.executor(c)
 }
 
 // btrfs ioctl executor
-func ioctlSnapshotExecute(c *cmdSubvolSnapshot) error {
+func ioctlSnapshotExecute(c *subvolSnapshot) error {
 	fi, err := os.Stat(c.dest)
 	if err == nil && !fi.IsDir() {
 		return fmt.Errorf("'%s' exists and it is not a directory", c.dest)
@@ -91,15 +91,15 @@ func ioctlSnapshotExecute(c *cmdSubvolSnapshot) error {
 }
 
 // btrfs cli executor
-func cliSnapshotExecute(c *cmdSubvolSnapshot) error {
+func cliSnapshotExecute(c *subvolSnapshot) error {
 	return c.error(errors.New("Unimplemented"))
 }
 
 // commands
 func ioctlSnapshot() interface{} {
-	return &cmdSubvolSnapshot{executor: ioctlSnapshotExecute}
+	return &subvolSnapshot{executor: ioctlSnapshotExecute}
 }
 
 func cliSnapshot() interface{} {
-	return &cmdSubvolSnapshot{executor: cliSnapshotExecute}
+	return &subvolSnapshot{executor: cliSnapshotExecute}
 }
