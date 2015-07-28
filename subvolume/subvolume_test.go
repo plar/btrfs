@@ -99,6 +99,22 @@ func TestSubVolumeFindNew(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestSubVolumeDelete(t *testing.T) {
+	repo := filepath.Join(mount, "repo_TestSubVolumeDelete")
+
+	subvol := btrfs.NewIoctl().Subvolume()
+	err := subvol.Create().Destination(repo).Execute()
+	assert.NoError(t, err)
+	_, err = os.Stat(repo)
+	assert.NoError(t, err)
+
+	err = subvol.Delete().Destination(repo).Execute()
+	assert.NoError(t, err)
+	_, err = os.Stat(repo)
+	assert.Error(t, err)
+	assert.True(t, os.IsNotExist(err))
+}
+
 func run(cmd string, args ...string) error {
 	log.Printf("Run %s %s", cmd, args)
 	_, err := exec.Command(cmd, args...).CombinedOutput()

@@ -15,6 +15,7 @@ const (
 	CmdSubvolumeCreate   Command = "subvolume create"
 	CmdSubvolumeSnapshot Command = "subvolume snapshot"
 	CmdSubvolumeFindNew  Command = "subvolume find-new"
+	CmdSubvolumeDelete   Command = "subvolume delete"
 )
 
 const (
@@ -55,6 +56,7 @@ type API interface {
 type Subvolume interface {
 	Create() CmdSubvolCreate
 	Snapshot() CmdSubvolSnapshot
+	Delete() CmdSubvolDelete
 }
 
 type CmdSubvolCreate interface {
@@ -78,6 +80,12 @@ type CmdSubvolFindNew interface {
 
 	Destination(dest string) CmdSubvolFindNew
 	LastGen(uint64) CmdSubvolFindNew
+}
+
+type CmdSubvolDelete interface {
+	Executor
+
+	Destination(dest string) CmdSubvolDelete
 }
 
 type api struct {
@@ -108,9 +116,13 @@ func (s *subvolume) Snapshot() CmdSubvolSnapshot {
 	return cmd
 }
 
-// func (s *subvolume) Snapshot() Snapshot {
-// 	return api[s.apiType][SubvolumeSnapshot]().(Snapshot)
-// }
+func (s *subvolume) Delete() CmdSubvolDelete {
+	cmd, ok := factory(s.apiType, CmdSubvolumeDelete).(CmdSubvolDelete)
+	if !ok {
+		panic("Expected btrfs.CmdSubvolDelete interface")
+	}
+	return cmd
+}
 
 func NewIoctl() API {
 	return &api{apiType: IOCTL}
