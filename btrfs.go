@@ -1,6 +1,10 @@
 package btrfs
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/satori/go.uuid"
+)
 
 type ApiType int
 type Command string
@@ -90,10 +94,28 @@ type SubvolDelete interface {
 	Destination(dest string) SubvolDelete
 }
 
-type SubvolList interface {
-	Executor
+type SubvolInfo struct {
+	Path             string
+	ParentID         uint64
+	ID               uint64
+	OriginGeneration uint64
+	Generation       uint64
+	ParentUUID       uuid.UUID
+	UUID             uuid.UUID
+	IsSnapshot       bool
+	IsReadOnly       bool
 
-	Destination(dest string) SubvolList
+	Childred []SubvolInfo
+}
+
+type SubvolList interface {
+	Path(path string) SubvolList
+
+	FilterGeneration(filter string) SubvolList
+	FilterOriginGeneration(filter string) SubvolList
+	Sort(order string) SubvolList
+
+	Execute() ([]SubvolInfo, error)
 }
 
 type api struct {
