@@ -3,8 +3,10 @@ package subvolume
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
 
 	"github.com/plar/btrfs"
+	"github.com/plar/btrfs/ioctl"
 )
 
 type subvolList struct {
@@ -48,13 +50,13 @@ func ioctlListExecute(c *subvolList) ([]btrfs.SubvolInfo, error) {
 		return nil, fmt.Errorf("Subvolume is required")
 	}
 
-	// path := filepath.Dir(c.dest)
+	path := filepath.Dir(c.dest)
 	// name := filepath.Base(c.dest)
 
-	// err := ioctl.SubvolList(path, name)
-	// if err != nil {
-	// 	return nil, err
-	// }
+	err := ioctl.SubvolList(path, 0)
+	if err != nil {
+		return nil, err
+	}
 
 	return nil, nil
 }

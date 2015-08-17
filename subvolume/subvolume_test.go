@@ -115,6 +115,13 @@ func TestSubVolumeDelete(t *testing.T) {
 	assert.True(t, os.IsNotExist(err))
 }
 
+func TestSubVolumeList(t *testing.T) {
+	subvol := btrfs.NewIoctl().Subvolume()
+
+	_, err := subvol.List().Path("/mnt/btrfs-sandbox/").Execute()
+	assert.NoError(t, err)
+}
+
 func run(cmd string, args ...string) error {
 	log.Printf("Run %s %s", cmd, args)
 	_, err := exec.Command(cmd, args...).CombinedOutput()
